@@ -36,3 +36,7 @@ from app.modules.recommendations.router import router as recommendations_router
 api_router.include_router(growth_router, prefix="/v1")
 api_router.include_router(recommendations_router, prefix="/v1")
 
+# Phase 7: Persistent Learner Context
+from app.modules.learner_context.router import router as learner_context_router
+api_router.include_router(learner_context_router, prefix="/v1")
+

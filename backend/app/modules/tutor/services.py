@@ -132,8 +132,23 @@ class TutorService:
             db.refresh(assistant_message)
             return assistant_message, tutor_response
 
-        # 5. Assemble messages for LLM
+        # 5. Fetch Learner Context and assemble messages for LLM
         context_str = build_tutor_context(retrieved_chunks)
+        
+        # Fetch learner context
+        try:
+            from app.modules.learner_context.services import get_learner_context_service
+            learner_contexts = get_learner_context_service().get_learner_context(db=db, user_id=user_id)
+            learner_context_str = ""
+            if learner_contexts:
+                ctx_blocks = []
+                for ctx in learner_contexts:
+                    ctx_blocks.append(f"- {ctx.context_type.upper()} ({ctx.context_key}): {ctx.context_value}")
+                learner_context_str = "<learner_context>\n" + "\n".join(ctx_blocks) + "\n</learner_context>\n\n"
+        except Exception as e:
+            logger.warning("Failed to fetch learner context for tutor: %s", e)
+            learner_context_str = ""
+
         prior_messages = [
             {"role": m.role, "content": m.content}
             for m in conversation.messages
@@ -143,6 +158,7 @@ class TutorService:
             context_str=context_str,
             recent_messages=prior_messages,
             user_question=question,
+            learner_context_str=learner_context_str,
         )
 
         valid_page_numbers = {c.page_number for c in retrieved_chunks}

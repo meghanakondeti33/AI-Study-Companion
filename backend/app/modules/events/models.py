@@ -41,6 +41,14 @@ def emit_learning_event(
     try:
         db.flush()
         logger.info("Learning event emitted: %s for user=%s project=%s", event_type, user_id, project_id)
+        
+        # Trigger learner context refresh asynchronously
+        try:
+            from app.modules.learner_context.tasks import async_refresh_learner_context
+            async_refresh_learner_context.delay(user_id)
+        except Exception as e:
+            logger.warning("Failed to trigger learner context refresh task: %s", e)
+            
     except Exception as e:
         logger.warning("Failed to flush learning event %s: %s", event_type, e)
     return event

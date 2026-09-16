@@ -45,6 +45,7 @@ def assemble_tutor_messages(
     context_str: str,
     recent_messages: List[dict],
     user_question: str,
+    learner_context_str: str = "",
 ) -> List[dict]:
     """Assemble conversation history, untrusted context, and user question."""
     messages = [
@@ -59,6 +60,7 @@ def assemble_tutor_messages(
     current_user_prompt = (
         f"Refer to the following project materials to answer my question:\n\n"
         f"{context_str}\n\n"
+        f"{learner_context_str}"
         f"Question: {user_question}"
     )
     messages.append({"role": "user", "content": current_user_prompt})

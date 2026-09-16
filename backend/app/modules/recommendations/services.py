@@ -47,6 +47,14 @@ class RecommendationService:
             .all()
         )
         mastery_map = {m.concept_id: m for m in masteries}
+        
+        cross_project_weaknesses = set()
+        try:
+            from app.modules.learner_context.services import get_learner_context_service
+            learner_contexts = get_learner_context_service().get_learner_context(db=db, user_id=user_id)
+            cross_project_weaknesses = {ctx.context_key for ctx in learner_contexts if ctx.context_type == "weakness"}
+        except Exception as e:
+            logger.warning("Failed to fetch learner context for recommendations: %s", e)
 
         created_recommendations: List[Recommendation] = []
         now = datetime.now(timezone.utc)
@@ -72,6 +80,8 @@ class RecommendationService:
             )
 
             # Rule 1: Declining trend -> 'practice'
+            is_known_weakness = concept.name.lower().strip() in cross_project_weaknesses
+            
             if delta <= -5.0:
                 rec = self._create_recommendation_if_unique(
                     db=db,
@@ -97,13 +107,29 @@ class RecommendationService:
                     rec_type="review",
                     title=f"Review {concept.name}",
                     description=f"Mastery in {concept.name} is currently at {score:.1f}%. Review study materials or consult the AI Tutor to build fundamentals.",
-                    priority="high" if score < 30.0 else "medium",
+                    priority="high" if (score < 30.0 or is_known_weakness) else "medium",
                     action_url=f"/projects/{project_id}?action=tutor&concept={concept.id}",
                 )
                 if rec:
                     created_recommendations.append(rec)
+                    
+            # Rule 3: Known cross-project weakness but ok locally -> 'revisit'
+            elif is_known_weakness and score >= 50.0:
+                rec = self._create_recommendation_if_unique(
+                    db=db,
+                    user_id=user_id,
+                    project_id=project_id,
+                    target_concept_id=concept.id,
+                    rec_type="revisit",
+                    title=f"Revisit {concept.name}",
+                    description=f"You have struggled with {concept.name} in the past. Take a quick quiz to reinforce your understanding.",
+                    priority="medium",
+                    action_url=f"/projects/{project_id}?action=quiz&concept={concept.id}",
+                )
+                if rec:
+                    created_recommendations.append(rec)
 
-            # Rule 3: High mastery (>= 80%) -> 'continue'
+            # Rule 4: High mastery (>= 80%) -> 'continue'
             elif score >= 80.0 and delta >= 0.0:
                 rec = self._create_recommendation_if_unique(
                     db=db,

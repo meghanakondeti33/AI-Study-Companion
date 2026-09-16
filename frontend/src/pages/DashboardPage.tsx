@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { api, SpaceItem, ProjectItem } from "../api/client";
+import { api, SpaceItem, ProjectItem, LearnerContextItem } from "../api/client";
 import {
   Layers,
   LogOut,
@@ -13,7 +13,9 @@ import {
   ArrowRight,
   AlertCircle,
   X,
-  Sparkles
+  Sparkles,
+  Zap,
+  TrendingDown
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -43,6 +45,14 @@ export default function DashboardPage() {
     queryKey: ["projects"],
     queryFn: () => api.projects.list(),
   });
+
+  const { data: learnerContexts = [] } = useQuery<LearnerContextItem[]>({
+    queryKey: ["learner-context"],
+    queryFn: () => api.learnerContext.getGlobalContext(),
+  });
+
+  const strengths = learnerContexts.filter(c => c.context_type === "strength");
+  const weaknesses = learnerContexts.filter(c => c.context_type === "weakness");
 
   // Mutations
   const createSpaceMutation = useMutation({
@@ -172,6 +182,47 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        {/* Global Learner Context Section */}
+        {(strengths.length > 0 || weaknesses.length > 0) && (
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {strengths.length > 0 && (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex gap-3">
+                <div className="mt-0.5">
+                  <div className="w-6 h-6 rounded-md bg-emerald-500/20 flex items-center justify-center">
+                    <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-emerald-400 mb-1">Recognized Strengths</h4>
+                  <ul className="text-xs text-slate-400 space-y-1">
+                    {strengths.map(s => (
+                      <li key={s.id}>• {s.context_key} (from {s.source})</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+            
+            {weaknesses.length > 0 && (
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 flex gap-3">
+                <div className="mt-0.5">
+                  <div className="w-6 h-6 rounded-md bg-rose-500/20 flex items-center justify-center">
+                    <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-rose-400 mb-1">Topics to Review</h4>
+                  <ul className="text-xs text-slate-400 space-y-1">
+                    {weaknesses.map(w => (
+                      <li key={w.id}>• {w.context_key} (from {w.source})</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Spaces Section */}
         <section className="space-y-4">

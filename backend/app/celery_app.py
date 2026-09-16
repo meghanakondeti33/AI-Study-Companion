@@ -21,6 +21,7 @@ celery_app.conf.update(
     task_max_retries=3,
     imports=[
         "app.modules.materials.tasks",
+        "app.modules.learner_context.tasks",
     ],
 )
 

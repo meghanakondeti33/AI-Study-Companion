@@ -213,6 +213,17 @@ export interface RecommendationActionResponse {
   recommendation: RecommendationItem;
 }
 
+// Phase 7: Learner Context
+export interface LearnerContextItem {
+  id: string;
+  user_id: string;
+  context_type: "strength" | "weakness" | "preference";
+  context_key: string;
+  context_value: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -425,6 +436,7 @@ export const api = {
         { method: "POST" }
       ),
   },
+  learnerContext: {
+    getGlobalContext: () => request<LearnerContextItem[]>("/api/v1/learner-context"),
+  },
 };
-
-

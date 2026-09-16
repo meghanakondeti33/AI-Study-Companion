@@ -20,6 +20,7 @@ from app.modules.assessment.models import Quiz, QuizQuestion, QuizAttempt, QuizA
 from app.modules.mastery.models import Concept, ConceptMastery, MasteryHistory
 from app.modules.growth.models import GrowthSnapshot
 from app.modules.recommendations.models import Recommendation
+from app.modules.learner_context.models import LearnerContext
 
 config = context.config
 

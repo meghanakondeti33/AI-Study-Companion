@@ -14,6 +14,8 @@ from app.modules.spaces.models import Space
 from app.modules.projects.models import Project
 from app.modules.materials.models import Material, MaterialPage, MaterialChunk
 from app.modules.events.models import LearningEvent
+from app.modules.tutor.models import TutorConversation, TutorMessage
+from app.modules.ai.models import AIRequest
 
 config = context.config
 

@@ -1,7 +1,14 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, ProjectItem, SpaceItem, MaterialItem } from "../api/client";
+import {
+  api,
+  ProjectItem,
+  SpaceItem,
+  MaterialItem,
+  TutorConversationItem,
+  TutorMessageItem,
+} from "../api/client";
 import {
   BookOpen,
   Target,
@@ -14,7 +21,13 @@ import {
   Loader2,
   FileWarning,
   Sparkles,
-  MessageSquare
+  MessageSquare,
+  Send,
+  Bot,
+  User,
+  Bookmark,
+  ShieldAlert,
+  Plus,
 } from "lucide-react";
 
 function formatBytes(bytes: number, decimals = 1): string {
@@ -130,6 +143,79 @@ export default function ProjectPage() {
   const handleDeleteMaterial = (materialId: string) => {
     if (confirm("Are you sure you want to delete this material?")) {
       deleteMaterialMutation.mutate(materialId);
+    }
+  };
+
+  // AI Tutor state & queries
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [questionInput, setQuestionInput] = useState("");
+  const [isAsking, setIsAsking] = useState(false);
+  const [tutorError, setTutorError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const {
+    data: conversations = [],
+  } = useQuery<TutorConversationItem[]>({
+    queryKey: ["tutor-conversations", projectId],
+    queryFn: () => api.tutor.listConversations(projectId!),
+    enabled: !!projectId,
+  });
+
+  const activeConversationId = selectedConversationId || (conversations.length > 0 ? conversations[0].id : null);
+
+  const {
+    data: activeConversation,
+    isLoading: isLoadingConversation,
+  } = useQuery<TutorConversationItem>({
+    queryKey: ["tutor-conversation", activeConversationId],
+    queryFn: () => api.tutor.getConversation(activeConversationId!),
+    enabled: !!activeConversationId,
+  });
+
+  const handleCreateNewConversation = async () => {
+    if (!projectId) return;
+    try {
+      const newConv = await api.tutor.createConversation(
+        projectId,
+        `Session ${conversations.length + 1}`
+      );
+      await queryClient.invalidateQueries({ queryKey: ["tutor-conversations", projectId] });
+      setSelectedConversationId(newConv.id);
+      setTutorError(null);
+    } catch (err: any) {
+      setTutorError(err.message || "Failed to create conversation");
+    }
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const content = questionInput.trim();
+    if (!content || !projectId || isAsking) return;
+
+    setIsAsking(true);
+    setTutorError(null);
+
+    try {
+      let convId = activeConversationId;
+      if (!convId) {
+        const titleSnippet = content.length > 25 ? content.slice(0, 25) + "..." : content;
+        const newConv = await api.tutor.createConversation(projectId, titleSnippet);
+        convId = newConv.id;
+        setSelectedConversationId(newConv.id);
+        await queryClient.invalidateQueries({ queryKey: ["tutor-conversations", projectId] });
+      }
+
+      await api.tutor.sendMessage(convId, content);
+      setQuestionInput("");
+      await queryClient.invalidateQueries({ queryKey: ["tutor-conversation", convId] });
+      await queryClient.invalidateQueries({ queryKey: ["tutor-conversations", projectId] });
+    } catch (err: any) {
+      setTutorError(err.message || "Failed to receive response from AI Tutor");
+    } finally {
+      setIsAsking(false);
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
   };
 
@@ -388,17 +474,222 @@ export default function ProjectPage() {
           )}
         </section>
 
-        {/* Phase 3 Notice: AI Tutor Integration Standby */}
-        <section className="rounded-2xl border border-slate-800/80 bg-slate-900/30 p-6 text-center space-y-3 max-w-2xl mx-auto">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-sky-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto shadow-md">
-            <Sparkles className="w-5 h-5" />
+        {/* Phase 3: AI Study Tutor Section */}
+        <section id="tutor-section" className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 sm:p-8 space-y-6">
+          {/* Tutor Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <h3 className="text-lg font-bold text-white">AI Study Tutor</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  Grounded RAG
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Ask questions answered strictly from your uploaded materials, with verified page citations and strict hallucination defense.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                id="new-tutor-session-btn"
+                onClick={handleCreateNewConversation}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New Chat
+              </button>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h4 className="text-sm font-bold text-white">Next Phase: Grounded AI Tutor</h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Once PDF materials are processed into chunks and embeddings, Phase 3 will enable grounded question-answering with exact page citations and confidence scores.
-            </p>
+
+          {/* Conversations Selector Tabs (if multiple exist) */}
+          {conversations.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+              <span className="text-slate-500 text-[11px] font-medium shrink-0">Sessions:</span>
+              {conversations.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedConversationId(c.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition shrink-0 border ${
+                    c.id === activeConversationId
+                      ? "bg-indigo-600 text-white border-indigo-500"
+                      : "bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200"
+                  }`}
+                >
+                  {c.title || "Study Session"}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Messages Container */}
+          <div
+            id="tutor-messages-container"
+            className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-4 sm:p-6 min-h-[300px] max-h-[480px] overflow-y-auto space-y-4"
+          >
+            {isLoadingConversation ? (
+              <div className="py-16 text-center text-xs text-slate-500 flex flex-col items-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                Loading conversation messages...
+              </div>
+            ) : !activeConversation || !activeConversation.messages || activeConversation.messages.length === 0 ? (
+              <div className="py-12 text-center space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 text-indigo-400 flex items-center justify-center mx-auto">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <p className="text-sm font-semibold text-slate-300">Ready to Answer Your Questions</p>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  The AI Tutor searches your project documents using vector similarity and cites exact page numbers. If information isn't in your materials, it refuses rather than hallucinating.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setQuestionInput("What are the core concepts covered in this material?");
+                    }}
+                    className="text-[11px] px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition"
+                  >
+                    💡 "What are the core concepts covered in this material?"
+                  </button>
+                  <button
+                    onClick={() => {
+                      setQuestionInput("Summarize page 1 of the uploaded document.");
+                    }}
+                    className="text-[11px] px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition"
+                  >
+                    💡 "Summarize page 1 of the uploaded document."
+                  </button>
+                </div>
+              </div>
+            ) : (
+              activeConversation.messages.map((msg) => {
+                const isUser = msg.role === "user";
+                const isRefusal =
+                  !isUser &&
+                  (msg.content.includes("couldn't find enough information") ||
+                    msg.content.includes("not available in the project material"));
+
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex items-start gap-3 ${isUser ? "justify-end" : "justify-start"}`}
+                  >
+                    {!isUser && (
+                      <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                    )}
+
+                    <div
+                      className={`max-w-2xl rounded-2xl p-4 text-xs leading-relaxed space-y-2.5 ${
+                        isUser
+                          ? "bg-sky-600/20 border border-sky-500/30 text-white rounded-tr-none"
+                          : "bg-slate-900/90 border border-slate-800 text-slate-200 rounded-tl-none"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap font-sans text-[13px]">{msg.content}</p>
+
+                      {/* Grounded Refusal Notice */}
+                      {isRefusal && (
+                        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2.5 text-[11px] text-amber-300 flex items-center gap-2">
+                          <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>Grounded Refusal: Topic is outside the uploaded project materials.</span>
+                        </div>
+                      )}
+
+                      {/* Verified Page Citations List */}
+                      {!isUser && msg.citations && msg.citations.length > 0 && (
+                        <div
+                          className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-2"
+                          data-testid="tutor-citations"
+                        >
+                          <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                            <Bookmark className="w-3 h-3 text-indigo-400" />
+                            Verified Sources:
+                          </span>
+                          {msg.citations.map((c, i) => (
+                            <span
+                              key={i}
+                              data-testid="tutor-citation"
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[11px] font-mono font-medium hover:bg-indigo-500/25 transition cursor-default"
+                              title={c.supporting_text ? `Evidence: "${c.supporting_text}"` : `Cited from Page ${c.page_number}`}
+                            >
+                              Page {c.page_number}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {isUser && (
+                      <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/30 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <User className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+
+            {/* In-Flight Response Loader */}
+            {isAsking && (
+              <div className="flex items-start gap-3 justify-start">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div className="rounded-2xl rounded-tl-none bg-slate-900/90 border border-slate-800 p-4 text-xs text-slate-400 flex items-center gap-2.5">
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                  <span>Retrieving project pages & generating grounded answer...</span>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
+
+          {/* Tutor Error Notice */}
+          {tutorError && (
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{tutorError}</span>
+              </div>
+              <button
+                onClick={() => setTutorError(null)}
+                className="text-[11px] text-slate-400 hover:text-white"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Question Input Form */}
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <input
+              id="tutor-question-input"
+              type="text"
+              value={questionInput}
+              onChange={(e) => setQuestionInput(e.target.value)}
+              placeholder="Ask a question about your uploaded materials (e.g. 'What is photosynthesis?')..."
+              disabled={isAsking}
+              className="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition disabled:opacity-50"
+            />
+            <button
+              id="tutor-send-btn"
+              type="submit"
+              disabled={isAsking || !questionInput.trim()}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-indigo-600/20"
+            >
+              {isAsking ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              <span>Ask Tutor</span>
+            </button>
+          </form>
         </section>
       </main>
     </div>

@@ -44,6 +44,31 @@ export interface MaterialItem {
   processed_at: string | null;
 }
 
+export interface CitationItem {
+  material_id: string;
+  page_number: number;
+  supporting_text?: string | null;
+}
+
+export interface TutorMessageItem {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  citations?: CitationItem[] | null;
+  created_at: string;
+}
+
+export interface TutorConversationItem {
+  id: string;
+  user_id: string;
+  project_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  messages?: TutorMessageItem[];
+}
+
 export class ApiError extends Error {
   status: number;
   data: any;
@@ -179,4 +204,21 @@ export const api = {
         method: "DELETE",
       }),
   },
+  tutor: {
+    listConversations: (projectId: string) =>
+      request<TutorConversationItem[]>(`/api/v1/projects/${projectId}/tutor/conversations`),
+    createConversation: (projectId: string, title?: string) =>
+      request<TutorConversationItem>(`/api/v1/projects/${projectId}/tutor/conversations`, {
+        method: "POST",
+        body: JSON.stringify({ title: title || "New Study Session" }),
+      }),
+    getConversation: (conversationId: string) =>
+      request<TutorConversationItem>(`/api/v1/tutor/conversations/${conversationId}`),
+    sendMessage: (conversationId: string, content: string) =>
+      request<TutorMessageItem>(`/api/v1/tutor/conversations/${conversationId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+      }),
+  },
 };
+

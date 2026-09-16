@@ -70,6 +70,15 @@ test.describe("Phase 2 E2E Flow: Project Materials / PDF Processing", () => {
       });
     });
 
+    // Mock Tutor Conversations
+    await page.route(/\/api\/v1\/projects\/prj-202\/tutor\/conversations/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      });
+    });
+
     // Mock Materials Upload & Listing with state transitions
     await page.route(/\/api\/v1\/projects\/prj-202\/materials/, async (route) => {
       if (route.request().method() === "POST") {

@@ -55,8 +55,9 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Email address</label>
+              <label htmlFor="email" className="block text-xs font-medium text-slate-300 mb-1.5">Email address</label>
               <input
+                id="email"
                 type="email"
                 required
                 value={email}
@@ -67,8 +68,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
+              <label htmlFor="password" className="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
               <input
+                id="password"
                 type="password"
                 required
                 value={password}

@@ -52,6 +52,36 @@ test.describe("Phase 2 E2E Flow: Project Materials / PDF Processing", () => {
       });
     });
 
+    // Mock Projects List (Dashboard)
+    await page.route(/\/api\/v1\/projects$/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      });
+    });
+
+    // Mock Learner Context (Dashboard)
+    await page.route(/\/api\/v1\/learner-context/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [
+            {
+              id: "ctx-1",
+              user_id: "usr-123",
+              strengths: [],
+              weaknesses: [],
+              learning_preferences: {},
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          ]
+        }),
+      });
+    });
+
     // Mock Project
     await page.route(/\/api\/v1\/projects\/prj-202$/, async (route) => {
       await route.fulfill({
@@ -122,6 +152,34 @@ test.describe("Phase 2 E2E Flow: Project Materials / PDF Processing", () => {
         });
       } else {
         await route.continue();
+      }
+    });
+
+    
+    // Catch-all for unmocked ProjectPage endpoints to prevent 401s
+    await page.route(/\/api\/v1\/projects\/[^\/]+\/(quizzes|concepts|mastery|recommendations|growth)/, async (route) => {
+      const url = route.request().url();
+      if (url.includes('/growth')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            current_snapshot: null,
+            status: 'stable',
+            overall_mastery: 0,
+            trend_delta: 0,
+            concept_count: 0,
+            improving_concepts: [],
+            stable_concepts: [],
+            attention_concepts: []
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
       }
     });
 

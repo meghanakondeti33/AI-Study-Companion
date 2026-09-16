@@ -20,6 +20,33 @@ test.describe("Phase 5 E2E Flow: Concept Mastery Tracking", () => {
       });
     });
 
+        // Catch-all for unmocked ProjectPage endpoints to prevent 401s
+    await page.route(/\/api\/v1\/projects\/[^\/]+\/(quizzes|concepts|mastery|recommendations|growth)/, async (route) => {
+      const url = route.request().url();
+      if (url.includes('/growth')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            current_snapshot: null,
+            status: 'stable',
+            overall_mastery: 0,
+            trend_delta: 0,
+            concept_count: 0,
+            improving_concepts: [],
+            stable_concepts: [],
+            attention_concepts: []
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
+      }
+    });
+
     // Mock Project
     await page.route(/\/api\/v1\/projects\/prj-202$/, async (route) => {
       await route.fulfill({
@@ -34,6 +61,79 @@ test.describe("Phase 5 E2E Flow: Concept Mastery Tracking", () => {
           learning_goal: "Master bioenergetics",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    // Mock Spaces
+    await page.route(/\/api\/v1\/spaces$/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: "spc-101",
+            user_id: "usr-123",
+            name: "Biology Space",
+            description: "Biological Sciences",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        ]),
+      });
+    });
+
+    await page.route(/\/api\/v1\/projects$/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      });
+    });
+
+    // Catch-all for unmocked ProjectPage endpoints to prevent 401s
+    await page.route(/\/api\/v1\/projects\/[^\/]+\/(quizzes|concepts|mastery|recommendations|growth)/, async (route) => {
+      const url = route.request().url();
+      if (url.includes('/growth')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            current_snapshot: null,
+            status: 'stable',
+            overall_mastery: 0,
+            trend_delta: 0,
+            concept_count: 0,
+            improving_concepts: [],
+            stable_concepts: [],
+            attention_concepts: []
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
+      }
+    });
+
+    await page.route(/\/api\/v1\/learner-context/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [
+            {
+              id: "ctx-1",
+              user_id: "usr-123",
+              strengths: [],
+              weaknesses: [],
+              learning_preferences: {},
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          ]
         }),
       });
     });

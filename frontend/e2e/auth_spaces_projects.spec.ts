@@ -49,6 +49,26 @@ test.describe("Phase 1 E2E Flow: Auth -> Spaces -> Projects", () => {
       });
     });
 
+    await page.route(/\/api\/v1\/learner-context/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [
+            {
+              id: "ctx-1",
+              user_id: "usr-123",
+              strengths: [],
+              weaknesses: [],
+              learning_preferences: {},
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          ]
+        }),
+      });
+    });
+
     await page.route(/\/api\/v1\/spaces/, async (route) => {
       if (route.request().method() === "POST") {
         const payload = JSON.parse(route.request().postData() || "{}");
@@ -119,12 +139,28 @@ test.describe("Phase 1 E2E Flow: Auth -> Spaces -> Projects", () => {
           url.includes("/quizzes") ||
           url.includes("/tutor") ||
           url.includes("/concepts") ||
-          url.includes("/mastery")
+          url.includes("/mastery") ||
+          url.includes("/recommendations")
         ) {
           await route.fulfill({
             status: 200,
             contentType: "application/json",
             body: JSON.stringify([]),
+          });
+        } else if (url.includes("/growth")) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              current_snapshot: null,
+              status: "stable",
+              overall_mastery: 0,
+              trend_delta: 0,
+              concept_count: 0,
+              improving_concepts: [],
+              stable_concepts: [],
+              attention_concepts: []
+            }),
           });
         }
  else if (url.includes("/api/v1/projects/prj-789")) {

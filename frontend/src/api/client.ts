@@ -437,6 +437,9 @@ export const api = {
       ),
   },
   learnerContext: {
-    getGlobalContext: () => request<LearnerContextItem[]>("/api/v1/learner-context"),
+    getGlobalContext: async () => {
+      const res = await request<{ items: LearnerContextItem[] }>("/api/v1/learner-context");
+      return res.items;
+    },
   },
 };

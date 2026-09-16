@@ -40,3 +40,6 @@ api_router.include_router(recommendations_router, prefix="/v1")
 from app.modules.learner_context.router import router as learner_context_router
 api_router.include_router(learner_context_router, prefix="/v1")
 
+# Phase 8: Background Jobs
+from app.modules.jobs.router import router as jobs_router
+api_router.include_router(jobs_router, prefix="/v1")

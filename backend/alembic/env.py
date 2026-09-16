@@ -21,7 +21,7 @@ from app.modules.mastery.models import Concept, ConceptMastery, MasteryHistory
 from app.modules.growth.models import GrowthSnapshot
 from app.modules.recommendations.models import Recommendation
 from app.modules.learner_context.models import LearnerContext
-
+from app.modules.jobs.models import BackgroundJob
 config = context.config
 
 if config.config_file_name is not None:

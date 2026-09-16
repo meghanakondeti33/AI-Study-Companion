@@ -14,6 +14,7 @@ from app.modules.materials.models import Material, MaterialStatus
 from app.modules.materials.schemas import MaterialRead, MaterialDetailRead
 from app.modules.materials.tasks import process_material_task
 from app.modules.events.models import emit_learning_event
+from app.modules.jobs.services import create_job
 
 logger = logging.getLogger(__name__)
 
@@ -110,9 +111,18 @@ async def upload_material(
     )
     db.commit()
 
-    # 8. Dispatch Celery task
+    # 8. Create BackgroundJob and dispatch Celery task
+    job = create_job(
+        db=db,
+        job_type="material_processing",
+        user_id=current_user.id,
+        project_id=project.id,
+        entity_id=material.id,
+        entity_type="material",
+    )
+    
     try:
-        process_material_task.delay(material.id)
+        process_material_task.delay(material.id, job.id)
     except Exception as e:
         logger.warning(
             "Could not dispatch Celery task for material %s (worker may be offline): %s",

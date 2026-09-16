@@ -21,6 +21,7 @@ class TransientProcessingError(Exception):
 def process_material_sync(
     db: Session,
     material_id: str,
+    job_id: str | None = None,
     embedding_service: EmbeddingService | None = None,
     storage_service: StorageService | None = None,
 ) -> Material:
@@ -155,6 +156,7 @@ def process_material_sync(
                     "page_count": doc.page_count,
                     "chunk_count": len(chunks_to_create),
                 },
+                idempotency_key=f"material_processed_{material.id}",
             )
             db.commit()
 
@@ -188,17 +190,26 @@ def process_material_sync(
         return material
 
 
+from app.modules.jobs.services import mark_job_running, mark_job_completed, mark_job_failed
+
 @celery_app.task(
     bind=True,
     name="app.modules.materials.tasks.process_material",
     max_retries=3,
     default_retry_delay=5,
 )
-def process_material_task(self, material_id: str):
+def process_material_task(self, material_id: str, job_id: str | None = None):
     """Celery background worker entrypoint with exponential backoff retries."""
     db: Session = SessionLocal()
     try:
-        process_material_sync(db, material_id)
+        if job_id:
+            mark_job_running(db, job_id, attempt=self.request.retries + 1)
+        
+        process_material_sync(db, material_id, job_id)
+        
+        if job_id:
+            mark_job_completed(db, job_id)
+            
     except TransientProcessingError as exc:
         logger.warning(
             "Transient error in process_material_task (attempt %d/%d): %s",
@@ -210,5 +221,7 @@ def process_material_task(self, material_id: str):
         raise self.retry(exc=exc, countdown=countdown)
     except Exception as exc:
         logger.error("Fatal error in process_material_task: %s", exc)
+        if job_id:
+            mark_job_failed(db, job_id, str(exc))
     finally:
         db.close()

@@ -43,3 +43,7 @@ api_router.include_router(learner_context_router, prefix="/v1")
 # Phase 8: Background Jobs
 from app.modules.jobs.router import router as jobs_router
 api_router.include_router(jobs_router, prefix="/v1")
+
+# Phase 9: Analytics & AI Observability
+from app.modules.analytics.router import router as analytics_router
+api_router.include_router(analytics_router, prefix="/v1")

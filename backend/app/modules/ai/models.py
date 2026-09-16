@@ -1,7 +1,7 @@
 import uuid
 import logging
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import Session
 from app.database import Base
 
@@ -68,3 +68,16 @@ def record_ai_telemetry(
     except Exception as e:
         logger.warning("Failed to flush AI telemetry: %s", e)
     return record
+
+
+class AIEvaluation(Base):
+    """Lightweight AI evaluation signals for regression and observability."""
+    __tablename__ = "ai_evaluations"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    ai_request_id = Column(String(36), ForeignKey("ai_requests.id", ondelete="CASCADE"), nullable=False, index=True)
+    evaluator_type = Column(String(100), nullable=False, index=True)  # e.g., 'citation_validity'
+    score = Column(Integer, nullable=False, default=0) # e.g. 0 to 100
+    passed = Column(Boolean, nullable=False, default=True)
+    feedback = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

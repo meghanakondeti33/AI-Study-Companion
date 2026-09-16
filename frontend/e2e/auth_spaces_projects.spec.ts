@@ -114,7 +114,13 @@ test.describe("Phase 1 E2E Flow: Auth -> Spaces -> Projects", () => {
         });
       } else if (route.request().method() === "GET") {
         const url = route.request().url();
-        if (url.includes("/materials") || url.includes("/quizzes") || url.includes("/tutor")) {
+        if (
+          url.includes("/materials") ||
+          url.includes("/quizzes") ||
+          url.includes("/tutor") ||
+          url.includes("/concepts") ||
+          url.includes("/mastery")
+        ) {
           await route.fulfill({
             status: 200,
             contentType: "application/json",

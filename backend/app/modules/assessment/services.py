@@ -581,9 +581,19 @@ class QuizService:
                 "question_count": total_questions,
                 "answers_count": len(answers),
                 "score": final_percentage,
-
             },
         )
+
+        # Update Concept Mastery deterministically from quiz performance
+        try:
+            from app.modules.mastery.services import get_mastery_service
+            get_mastery_service().process_quiz_completion(
+                db=db,
+                attempt_id=attempt.id,
+                user_id=user_id,
+            )
+        except Exception as e:
+            logger.warning("Failed to update concept mastery on quiz completion: %s", e)
 
         db.commit()
         db.refresh(attempt)

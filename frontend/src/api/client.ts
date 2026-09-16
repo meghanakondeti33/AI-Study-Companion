@@ -123,6 +123,42 @@ export interface QuizAttemptItem {
   answers: QuizAnswerItem[];
 }
 
+export interface ConceptItem {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConceptMasteryItem {
+  id: string;
+  user_id: string;
+  project_id: string;
+  concept_id: string;
+  concept_name?: string;
+  concept_description?: string;
+  mastery_score: number;
+  last_assessed_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MasteryHistoryItem {
+  id: string;
+  user_id: string;
+  project_id: string;
+  concept_id: string;
+  concept_name?: string;
+  previous_score: number;
+  new_score: number;
+  source: string;
+  evidence_id?: string;
+  evidence_details?: any;
+  created_at: string;
+}
+
 
 export class ApiError extends Error {
   status: number;
@@ -300,6 +336,16 @@ export const api = {
       request<QuizAttemptItem>(`/api/v1/attempts/${attemptId}/complete`, {
         method: "POST",
       }),
+  },
+  mastery: {
+    getConcepts: (projectId: string) =>
+      request<ConceptItem[]>(`/api/v1/projects/${projectId}/concepts`),
+    getMastery: (projectId: string) =>
+      request<ConceptMasteryItem[]>(`/api/v1/projects/${projectId}/mastery`),
+    getMasteryHistory: (projectId: string) =>
+      request<MasteryHistoryItem[]>(`/api/v1/projects/${projectId}/mastery/history`),
+    getConceptMastery: (conceptId: string) =>
+      request<ConceptMasteryItem>(`/api/v1/concepts/${conceptId}/mastery`),
   },
 };
 

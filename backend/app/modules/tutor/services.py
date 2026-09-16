@@ -249,6 +249,21 @@ class TutorService:
         db.commit()
         db.refresh(assistant_message)
 
+        # 9. Evaluate learning evidence for Concept Mastery (conservative)
+        try:
+            from app.modules.mastery.services import get_mastery_service
+            get_mastery_service().process_tutor_interaction(
+                db=db,
+                user_id=user_id,
+                project_id=conversation.project_id,
+                user_message_id=user_message.id,
+                user_message=question,
+                tutor_response=tutor_response.answer,
+                is_grounded=tutor_response.grounded,
+            )
+        except Exception as e:
+            logger.warning("Failed to evaluate tutor mastery evidence: %s", e)
+
         return assistant_message, tutor_response
 
 

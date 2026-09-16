@@ -164,6 +164,17 @@ def process_material_sync(
             doc.page_count,
             len(chunks_to_create),
         )
+
+        # 12. Extract initial concepts for the project if not already present
+        try:
+            from app.modules.mastery.services import get_mastery_service
+            get_mastery_service().extract_project_concepts(
+                db=db,
+                project_id=material.project_id,
+            )
+        except Exception as exc:
+            logger.warning("Auto concept extraction after material processing failed (non-blocking): %s", exc)
+
         return material
 
     except TransientProcessingError:

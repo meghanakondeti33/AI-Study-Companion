@@ -26,3 +26,7 @@ api_router.include_router(tutor_router, prefix="/v1")
 # Phase 4: Adaptive Quiz + Understanding Evaluation
 api_router.include_router(assessment_router, prefix="/v1")
 
+# Phase 5: Concept Mastery Tracking
+from app.modules.mastery.router import router as mastery_router
+api_router.include_router(mastery_router, prefix="/v1")
+

@@ -10,6 +10,7 @@ import {
   TutorMessageItem,
 } from "../api/client";
 import QuizSection from "../components/QuizSection";
+import MasterySection from "../components/MasterySection";
 import {
 
   BookOpen,
@@ -699,6 +700,9 @@ export default function ProjectPage() {
 
         {/* Phase 4: Adaptive Quiz & Understanding Evaluation Section */}
         <QuizSection projectId={projectId!} hasReadyMaterials={hasReadyMaterials} />
+
+        {/* Phase 5: Concept Mastery Tracking Section */}
+        <MasterySection projectId={projectId!} />
       </main>
     </div>
   );

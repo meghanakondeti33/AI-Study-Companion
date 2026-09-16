@@ -9,6 +9,9 @@ sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), ".."
 
 from app.config import settings
 from app.database import Base
+from app.modules.users.models import User
+from app.modules.spaces.models import Space
+from app.modules.projects.models import Project
 
 config = context.config
 

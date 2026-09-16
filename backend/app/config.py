@@ -41,9 +41,12 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     EMBEDDING_DIMENSION: int = 1536
 
-    # Storage
+    # Storage & Uploads
     STORAGE_TYPE: str = "local"
     STORAGE_LOCAL_PATH: str = "./storage/uploads"
+    MAX_UPLOAD_SIZE_BYTES: int = 25 * 1024 * 1024  # 25 MB
+    CHUNK_SIZE: int = 800
+    CHUNK_OVERLAP: int = 100
 
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]

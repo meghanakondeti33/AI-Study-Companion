@@ -3,6 +3,7 @@ from app.api.v1 import health
 from app.modules.auth.router import router as auth_router
 from app.modules.spaces.router import router as spaces_router
 from app.modules.projects.router import router as projects_router
+from app.modules.materials.router import router as materials_router
 
 api_router = APIRouter()
 
@@ -13,3 +14,6 @@ api_router.include_router(health.router, prefix="/v1")
 api_router.include_router(auth_router, prefix="/v1")
 api_router.include_router(spaces_router, prefix="/v1")
 api_router.include_router(projects_router, prefix="/v1")
+
+# Phase 2: Materials / PDF Processing
+api_router.include_router(materials_router, prefix="/v1")

@@ -19,6 +19,9 @@ celery_app.conf.update(
     task_reject_on_worker_lost=True,
     task_default_retry_delay=5,
     task_max_retries=3,
+    imports=[
+        "app.modules.materials.tasks",
+    ],
 )
 
 # Placeholder test task to verify Celery worker functionality

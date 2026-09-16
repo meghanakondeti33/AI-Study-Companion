@@ -114,7 +114,13 @@ test.describe("Phase 1 E2E Flow: Auth -> Spaces -> Projects", () => {
         });
       } else if (route.request().method() === "GET") {
         const url = route.request().url();
-        if (url.includes("/api/v1/projects/prj-789")) {
+        if (url.includes("/materials")) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify([]),
+          });
+        } else if (url.includes("/api/v1/projects/prj-789")) {
           await route.fulfill({
             status: 200,
             contentType: "application/json",
@@ -179,7 +185,7 @@ test.describe("Phase 1 E2E Flow: Auth -> Spaces -> Projects", () => {
     await page.getByText("Open workspace").first().click();
     await expect(page).toHaveURL(/.*projects\/prj-789/);
     await expect(page.getByRole("heading", { name: "Algorithms Mastery" })).toBeVisible();
-    await expect(page.getByText("Project Workspace Ready")).toBeVisible();
+    await expect(page.getByText("Study Materials")).toBeVisible();
     await expect(page.getByText("Master Dijkstra & DFS")).toBeVisible();
   });
 });

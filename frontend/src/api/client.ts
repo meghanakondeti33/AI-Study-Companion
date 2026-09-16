@@ -29,6 +29,21 @@ export interface ProjectItem {
   updated_at: string;
 }
 
+export interface MaterialItem {
+  id: string;
+  project_id: string;
+  filename: string;
+  original_filename: string;
+  file_type: string;
+  file_size: number;
+  status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+  error_message: string | null;
+  page_count: number | null;
+  created_at: string;
+  updated_at: string;
+  processed_at: string | null;
+}
+
 export class ApiError extends Error {
   status: number;
   data: any;
@@ -143,6 +158,24 @@ export const api = {
       }),
     delete: (id: string) =>
       request<void>(`/api/v1/projects/${id}`, {
+        method: "DELETE",
+      }),
+  },
+  materials: {
+    list: (projectId: string) =>
+      request<MaterialItem[]>(`/api/v1/projects/${projectId}/materials`),
+    get: (materialId: string) =>
+      request<MaterialItem>(`/api/v1/materials/${materialId}`),
+    upload: (projectId: string, file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return request<MaterialItem>(`/api/v1/projects/${projectId}/materials`, {
+        method: "POST",
+        body: formData,
+      });
+    },
+    delete: (materialId: string) =>
+      request<void>(`/api/v1/materials/${materialId}`, {
         method: "DELETE",
       }),
   },

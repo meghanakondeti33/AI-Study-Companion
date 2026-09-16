@@ -69,6 +69,61 @@ export interface TutorConversationItem {
   messages?: TutorMessageItem[];
 }
 
+export interface QuizQuestionItem {
+  id: string;
+  quiz_id: string;
+  question_type: "mcq" | "open_ended";
+  question_text: string;
+  options?: string[] | null;
+  difficulty: string;
+  source_citations?: { material_id: string; page_number: number }[] | null;
+  correct_answer?: string;
+  explanation?: string;
+}
+
+export interface QuizItem {
+  id: string;
+  project_id: string;
+  user_id: string;
+  title: string;
+  status: string;
+  created_at: string;
+  completed_at?: string | null;
+  question_count: number;
+  questions?: QuizQuestionItem[];
+}
+
+export interface EvaluationDetails {
+  strengths: string[];
+  gaps: string[];
+  improvement_hint: string;
+}
+
+export interface QuizAnswerItem {
+  id: string;
+  attempt_id: string;
+  question_id: string;
+  answer_text: string;
+  is_correct?: boolean | null;
+  score?: number | null;
+  feedback?: string | null;
+  evaluation_details?: EvaluationDetails | null;
+  evaluated_by: "system" | "ai";
+  created_at: string;
+  question?: QuizQuestionItem | null;
+}
+
+export interface QuizAttemptItem {
+  id: string;
+  quiz_id: string;
+  user_id: string;
+  started_at: string;
+  completed_at?: string | null;
+  score?: number | null;
+  answers: QuizAnswerItem[];
+}
+
+
 export class ApiError extends Error {
   status: number;
   data: any;
@@ -220,5 +275,32 @@ export const api = {
         body: JSON.stringify({ content }),
       }),
   },
+  quizzes: {
+    list: (projectId: string) =>
+      request<QuizItem[]>(`/api/v1/projects/${projectId}/quizzes`),
+    generate: (projectId: string, payload: { num_questions?: number; difficulty?: string; title?: string }) =>
+      request<QuizItem>(`/api/v1/projects/${projectId}/quizzes`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    get: (quizId: string) =>
+      request<QuizItem>(`/api/v1/quizzes/${quizId}`),
+    startAttempt: (quizId: string) =>
+      request<QuizAttemptItem>(`/api/v1/quizzes/${quizId}/attempts`, {
+        method: "POST",
+      }),
+    getAttempt: (attemptId: string) =>
+      request<QuizAttemptItem>(`/api/v1/attempts/${attemptId}`),
+    submitAnswer: (attemptId: string, questionId: string, answerText: string) =>
+      request<QuizAnswerItem>(`/api/v1/attempts/${attemptId}/answers`, {
+        method: "POST",
+        body: JSON.stringify({ question_id: questionId, answer_text: answerText }),
+      }),
+    completeAttempt: (attemptId: string) =>
+      request<QuizAttemptItem>(`/api/v1/attempts/${attemptId}/complete`, {
+        method: "POST",
+      }),
+  },
 };
+
 

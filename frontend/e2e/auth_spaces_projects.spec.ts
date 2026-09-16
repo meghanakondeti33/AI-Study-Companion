@@ -114,13 +114,14 @@ test.describe("Phase 1 E2E Flow: Auth -> Spaces -> Projects", () => {
         });
       } else if (route.request().method() === "GET") {
         const url = route.request().url();
-        if (url.includes("/materials")) {
+        if (url.includes("/materials") || url.includes("/quizzes") || url.includes("/tutor")) {
           await route.fulfill({
             status: 200,
             contentType: "application/json",
             body: JSON.stringify([]),
           });
-        } else if (url.includes("/api/v1/projects/prj-789")) {
+        }
+ else if (url.includes("/api/v1/projects/prj-789")) {
           await route.fulfill({
             status: 200,
             contentType: "application/json",

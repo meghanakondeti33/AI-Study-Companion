@@ -9,7 +9,9 @@ import {
   TutorConversationItem,
   TutorMessageItem,
 } from "../api/client";
+import QuizSection from "../components/QuizSection";
 import {
+
   BookOpen,
   Target,
   FileText,
@@ -83,7 +85,10 @@ export default function ProjectPage() {
     },
   });
 
+  const hasReadyMaterials = Array.isArray(materials) && materials.some((m) => m.status === "READY");
+
   // Mutations
+
   const deleteProjectMutation = useMutation({
     mutationFn: () => api.projects.delete(projectId!),
     onSuccess: () => {
@@ -691,7 +696,11 @@ export default function ProjectPage() {
             </button>
           </form>
         </section>
+
+        {/* Phase 4: Adaptive Quiz & Understanding Evaluation Section */}
+        <QuizSection projectId={projectId!} hasReadyMaterials={hasReadyMaterials} />
       </main>
     </div>
   );
 }
+

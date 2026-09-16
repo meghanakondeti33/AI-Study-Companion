@@ -5,6 +5,7 @@ from app.modules.spaces.router import router as spaces_router
 from app.modules.projects.router import router as projects_router
 from app.modules.materials.router import router as materials_router
 from app.modules.tutor.router import router as tutor_router
+from app.modules.assessment.router import router as assessment_router
 
 api_router = APIRouter()
 
@@ -21,3 +22,7 @@ api_router.include_router(materials_router, prefix="/v1")
 
 # Phase 3: AI Tutor + RAG + Grounded Citations
 api_router.include_router(tutor_router, prefix="/v1")
+
+# Phase 4: Adaptive Quiz + Understanding Evaluation
+api_router.include_router(assessment_router, prefix="/v1")
+

@@ -16,6 +16,7 @@ from app.modules.materials.models import Material, MaterialPage, MaterialChunk
 from app.modules.events.models import LearningEvent
 from app.modules.tutor.models import TutorConversation, TutorMessage
 from app.modules.ai.models import AIRequest
+from app.modules.assessment.models import Quiz, QuizQuestion, QuizAttempt, QuizAnswer
 
 config = context.config
 

@@ -101,7 +101,17 @@ test.describe("Phase 3 E2E Flow: AI Tutor + Grounded RAG + Citations + Refusal",
       });
     });
 
+    // Mock Quizzes list
+    await page.route(/\/api\/v1\/projects\/prj-202\/quizzes/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      });
+    });
+
     // Mock Tutor Conversations list
+
     await page.route(/\/api\/v1\/projects\/prj-202\/tutor\/conversations/, async (route) => {
       if (route.request().method() === "POST") {
         const body = JSON.parse(route.request().postData() || "{}");

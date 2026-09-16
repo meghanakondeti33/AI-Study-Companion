@@ -30,3 +30,9 @@ api_router.include_router(assessment_router, prefix="/v1")
 from app.modules.mastery.router import router as mastery_router
 api_router.include_router(mastery_router, prefix="/v1")
 
+# Phase 6: Growth Classification + Personalized Recommendations
+from app.modules.growth.router import router as growth_router
+from app.modules.recommendations.router import router as recommendations_router
+api_router.include_router(growth_router, prefix="/v1")
+api_router.include_router(recommendations_router, prefix="/v1")
+

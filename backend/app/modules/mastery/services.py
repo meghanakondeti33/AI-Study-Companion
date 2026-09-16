@@ -294,6 +294,18 @@ class MasteryService:
         )
         db.commit()
         db.refresh(mastery)
+
+        # 6. Trigger Growth Classification and Recommendations update
+        try:
+            from app.modules.growth.services import get_growth_service
+            get_growth_service().compute_project_growth(
+                db=db,
+                project_id=project_id,
+                user_id=user_id,
+            )
+        except Exception as exc:
+            logger.warning("Failed to compute growth snapshot after mastery update: %s", exc)
+
         return mastery
 
     def process_quiz_completion(

@@ -11,6 +11,8 @@ import {
 } from "../api/client";
 import QuizSection from "../components/QuizSection";
 import MasterySection from "../components/MasterySection";
+import GrowthSection from "../components/GrowthSection";
+import RecommendationsSection from "../components/RecommendationsSection";
 import {
 
   BookOpen,
@@ -703,6 +705,12 @@ export default function ProjectPage() {
 
         {/* Phase 5: Concept Mastery Tracking Section */}
         <MasterySection projectId={projectId!} />
+
+        {/* Phase 6: Growth Classification */}
+        <GrowthSection projectId={projectId!} />
+
+        {/* Phase 6: Personalized Recommendations */}
+        <RecommendationsSection projectId={projectId!} />
       </main>
     </div>
   );

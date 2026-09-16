@@ -159,6 +159,60 @@ export interface MasteryHistoryItem {
   created_at: string;
 }
 
+// Phase 6: Growth Classification
+export interface ConceptGrowthItem {
+  concept_id: string;
+  concept_name: string;
+  mastery_score: number;
+  trend_delta: number;
+  status: "improving" | "stable" | "requiring_attention";
+}
+
+export interface GrowthSnapshotItem {
+  id: string;
+  user_id: string;
+  project_id: string;
+  status: string;
+  overall_mastery: number;
+  previous_overall_mastery: number | null;
+  trend_delta: number;
+  created_at: string;
+}
+
+export interface GrowthOverviewItem {
+  current_snapshot: GrowthSnapshotItem | null;
+  status: string;
+  overall_mastery: number;
+  trend_delta: number;
+  concept_count: number;
+  improving_concepts: ConceptGrowthItem[];
+  stable_concepts: ConceptGrowthItem[];
+  attention_concepts: ConceptGrowthItem[];
+}
+
+// Phase 6: Personalized Recommendations
+export interface RecommendationItem {
+  id: string;
+  user_id: string;
+  project_id: string;
+  recommendation_type: "review" | "practice" | "revisit" | "continue";
+  title: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+  target_concept_id: string | null;
+  target_concept_name: string | null;
+  action_url: string | null;
+  status: "active" | "completed" | "dismissed";
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface RecommendationActionResponse {
+  success: boolean;
+  status: string;
+  recommendation: RecommendationItem;
+}
+
 
 export class ApiError extends Error {
   status: number;
@@ -346,6 +400,30 @@ export const api = {
       request<MasteryHistoryItem[]>(`/api/v1/projects/${projectId}/mastery/history`),
     getConceptMastery: (conceptId: string) =>
       request<ConceptMasteryItem>(`/api/v1/concepts/${conceptId}/mastery`),
+  },
+  growth: {
+    getOverview: (projectId: string) =>
+      request<GrowthOverviewItem>(`/api/v1/projects/${projectId}/growth`),
+    getHistory: (projectId: string, limit?: number) =>
+      request<GrowthSnapshotItem[]>(
+        `/api/v1/projects/${projectId}/growth/history${limit ? `?limit=${limit}` : ""}`
+      ),
+  },
+  recommendations: {
+    list: (projectId: string, status?: string) =>
+      request<RecommendationItem[]>(
+        `/api/v1/projects/${projectId}/recommendations${status ? `?status=${status}` : ""}`
+      ),
+    complete: (recommendationId: string) =>
+      request<RecommendationActionResponse>(
+        `/api/v1/recommendations/${recommendationId}/complete`,
+        { method: "POST" }
+      ),
+    dismiss: (recommendationId: string) =>
+      request<RecommendationActionResponse>(
+        `/api/v1/recommendations/${recommendationId}/dismiss`,
+        { method: "POST" }
+      ),
   },
 };
 

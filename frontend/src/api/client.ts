@@ -5,6 +5,7 @@ export interface UserProfile {
   email: string;
   name: string;
   is_active: boolean;
+  is_admin?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -225,6 +226,133 @@ export interface LearnerContextItem {
   updated_at: string;
 }
 
+// Phase 10: Admin Dashboard & System Health
+export interface AdminStats {
+  total_users: number;
+  active_users: number;
+  admin_users: number;
+  total_spaces: number;
+  total_projects: number;
+  total_materials: number;
+  total_quizzes: number;
+  total_quiz_attempts: number;
+  total_ai_requests: number;
+  total_background_jobs: number;
+}
+
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  name: string;
+  is_active: boolean;
+  is_admin: boolean;
+  created_at: string;
+  updated_at: string;
+  spaces_count: number;
+  projects_count: number;
+  last_activity_at: string | null;
+}
+
+export interface AdminUserListResponse {
+  users: AdminUserItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminProjectItem {
+  id: string;
+  name: string;
+  description: string | null;
+  learning_goal: string | null;
+  space_id: string;
+  space_name: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  materials_count: number;
+  quizzes_count: number;
+  created_at: string;
+}
+
+export interface AdminProjectListResponse {
+  projects: AdminProjectItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminActivityItem {
+  id: string;
+  user_id: string;
+  user_email: string;
+  project_id: string | null;
+  event_type: string;
+  description: string;
+  created_at: string;
+}
+
+export interface AdminActivityListResponse {
+  events: AdminActivityItem[];
+  total: number;
+}
+
+export interface AdminAIFeatureStat {
+  feature: string;
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  average_latency_ms: number;
+  total_tokens: number;
+}
+
+export interface AdminAIEvaluationStats {
+  total_evaluations: number;
+  passed_evaluations: number;
+  failed_evaluations: number;
+  average_score: number;
+}
+
+export interface AdminAIObservabilityResponse {
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  average_latency_ms: number;
+  total_tokens: number;
+  features: AdminAIFeatureStat[];
+  evaluations: AdminAIEvaluationStats;
+}
+
+export interface AdminJobItem {
+  id: string;
+  job_type: string;
+  status: string;
+  user_id: string;
+  user_email: string;
+  project_id: string | null;
+  attempts: number;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface AdminJobsResponse {
+  queued_count: number;
+  running_count: number;
+  completed_count: number;
+  failed_count: number;
+  recent_jobs: AdminJobItem[];
+}
+
+export interface AdminSystemHealth {
+  status: string;
+  app_name: string;
+  version: string;
+  environment: string;
+  services: Record<string, string>;
+}
+
 export class ApiError extends Error {
   status: number;
   data: any;
@@ -441,5 +569,42 @@ export const api = {
       const res = await request<{ items: LearnerContextItem[] }>("/api/v1/learner-context");
       return res.items;
     },
+  },
+  admin: {
+    getStats: () => request<AdminStats>("/api/v1/admin/stats"),
+    getUsers: (params?: { limit?: number; offset?: number; search?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.limit) query.set("limit", params.limit.toString());
+      if (params?.offset) query.set("offset", params.offset.toString());
+      if (params?.search) query.set("search", params.search);
+      const qs = query.toString() ? `?${query.toString()}` : "";
+      return request<AdminUserListResponse>(`/api/v1/admin/users${qs}`);
+    },
+    getProjects: (params?: { limit?: number; offset?: number }) => {
+      const query = new URLSearchParams();
+      if (params?.limit) query.set("limit", params.limit.toString());
+      if (params?.offset) query.set("offset", params.offset.toString());
+      const qs = query.toString() ? `?${query.toString()}` : "";
+      return request<AdminProjectListResponse>(`/api/v1/admin/projects${qs}`);
+    },
+    getLearningActivity: (params?: { limit?: number; offset?: number; event_type?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.limit) query.set("limit", params.limit.toString());
+      if (params?.offset) query.set("offset", params.offset.toString());
+      if (params?.event_type) query.set("event_type", params.event_type);
+      const qs = query.toString() ? `?${query.toString()}` : "";
+      return request<AdminActivityListResponse>(`/api/v1/admin/learning-activity${qs}`);
+    },
+    getAIObservability: (days: number = 30) =>
+      request<AdminAIObservabilityResponse>(`/api/v1/admin/ai-observability?days=${days}`),
+    getJobs: (params?: { limit?: number; offset?: number; status?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.limit) query.set("limit", params.limit.toString());
+      if (params?.offset) query.set("offset", params.offset.toString());
+      if (params?.status) query.set("status", params.status);
+      const qs = query.toString() ? `?${query.toString()}` : "";
+      return request<AdminJobsResponse>(`/api/v1/admin/jobs${qs}`);
+    },
+    getSystemHealth: () => request<AdminSystemHealth>("/api/v1/admin/system-health"),
   },
 };

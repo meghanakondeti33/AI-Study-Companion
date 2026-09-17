@@ -68,7 +68,7 @@ async def upload_material(
     if len(content) > settings.MAX_UPLOAD_SIZE_BYTES:
         max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
         raise HTTPException(
-            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File exceeds maximum allowed size of {max_mb} MB.",
         )
 

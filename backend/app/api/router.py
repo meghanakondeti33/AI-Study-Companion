@@ -47,3 +47,7 @@ api_router.include_router(jobs_router, prefix="/v1")
 # Phase 9: Analytics & AI Observability
 from app.modules.analytics.router import router as analytics_router
 api_router.include_router(analytics_router, prefix="/v1")
+
+# Phase 10: Admin Dashboard & Authorization
+from app.modules.admin.router import router as admin_router
+api_router.include_router(admin_router, prefix="/v1")

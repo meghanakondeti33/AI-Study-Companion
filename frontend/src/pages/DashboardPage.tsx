@@ -15,7 +15,8 @@ import {
   X,
   Sparkles,
   Zap,
-  TrendingDown
+  TrendingDown,
+  ShieldAlert
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -123,6 +124,15 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-4">
+            {user?.is_admin && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-400 hover:bg-amber-500/20 transition font-medium"
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>Admin Console</span>
+              </Link>
+            )}
             <div className="text-right hidden sm:block">
               <div className="text-xs font-semibold text-white">{user?.name}</div>
               <div className="text-[11px] text-slate-400">{user?.email}</div>

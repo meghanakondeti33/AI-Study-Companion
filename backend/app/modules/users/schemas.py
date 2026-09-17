@@ -20,6 +20,7 @@ class UserLogin(BaseModel):
 class UserRead(UserBase):
     id: str
     is_active: bool
+    is_admin: bool = False
     created_at: datetime
     updated_at: datetime
 

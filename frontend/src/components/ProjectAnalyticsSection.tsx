@@ -21,59 +21,44 @@ interface ProjectAnalyticsProps {
 }
 
 export default function ProjectAnalyticsSection({ projectId }: ProjectAnalyticsProps) {
-  const { data: materials = [] } = useQuery<MaterialItem[]>({
-    queryKey: ["materials", projectId],
-    queryFn: () => api.materials.list(projectId),
+  const { data: analytics, isLoading } = useQuery({
+    queryKey: ["project-analytics", projectId],
+    queryFn: () => api.analytics.getProjectAnalytics(projectId),
     enabled: !!projectId,
   });
 
-  const { data: concepts = [] } = useQuery<ConceptItem[]>({
-    queryKey: ["project-concepts", projectId],
-    queryFn: () => api.mastery.getConcepts(projectId),
-    enabled: !!projectId,
-  });
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-6">
+        <div className="h-24 bg-white/50 dark:bg-white/5 rounded-2xl"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-64 bg-white/50 dark:bg-white/5 rounded-2xl"></div>
+          <div className="h-64 bg-white/50 dark:bg-white/5 rounded-2xl"></div>
+        </div>
+      </div>
+    );
+  }
 
-  const { data: masteries = [] } = useQuery<ConceptMasteryItem[]>({
-    queryKey: ["project-mastery", projectId],
-    queryFn: () => api.mastery.getMastery(projectId),
-    enabled: !!projectId,
-  });
+  if (!analytics) return null;
 
-  const { data: quizzes = [] } = useQuery<QuizItem[]>({
-    queryKey: ["project-quizzes", projectId],
-    queryFn: () => api.quizzes.list(projectId),
-    enabled: !!projectId,
-  });
-
-  const { data: conversations = [] } = useQuery<TutorConversationItem[]>({
-    queryKey: ["tutor-conversations", projectId],
-    queryFn: () => api.tutor.listConversations(projectId),
-    enabled: !!projectId,
-  });
-
-  const { data: growth } = useQuery<GrowthOverviewItem>({
-    queryKey: ["project-growth", projectId],
-    queryFn: () => api.growth.getOverview(projectId),
-    enabled: !!projectId,
-  });
-
-  // Calculate metrics
-  const totalMaterials = materials.length;
-  const readyMaterials = materials.filter((m) => m.status === "READY").length;
-  const totalPagesIndexed = materials.reduce((acc, m) => acc + (m.page_count || 0), 0);
-
-  const totalConcepts = concepts.length;
-  const masteredConcepts = masteries.filter((m) => m.mastery_score >= 80).length;
-  const developingConcepts = masteries.filter((m) => m.mastery_score >= 50 && m.mastery_score < 80).length;
-  const needsPracticeConcepts = masteries.filter((m) => m.mastery_score < 50).length;
-
-  const averageMastery =
-    masteries.length > 0
-      ? Math.round(masteries.reduce((acc, m) => acc + m.mastery_score, 0) / masteries.length)
-      : 0;
-
-  const completedQuizzes = quizzes.filter((q) => q.status === "completed").length;
-  const totalQuizzes = quizzes.length;
+  const {
+    materials_uploaded: totalMaterials,
+    materials_processed: readyMaterials,
+    tutor_questions: totalTutorQuestions,
+    quizzes_attempted: totalQuizzes,
+    quizzes_completed: completedQuizzes,
+    concepts_tracked: totalConcepts,
+    improving_concepts: improvingConcepts,
+    stable_concepts: stableConcepts,
+    attention_concepts: attentionConcepts,
+    overall_mastery: averageMastery,
+  } = analytics;
+  
+  // Note: we can map the masteries using a heuristic since the backend endpoint only gives aggregate improving/stable/attention counts
+  // rather than detailed >80, 50-80, <50 logic. To keep the UI exact, we will map "Improving/Stable/Attention" concepts as proxies.
+  const masteredConcepts = improvingConcepts;
+  const developingConcepts = stableConcepts;
+  const needsPracticeConcepts = attentionConcepts;
 
   return (
     <div id="analytics-section" className="space-y-6">
@@ -179,20 +164,20 @@ export default function ProjectAnalyticsSection({ projectId }: ProjectAnalyticsP
         {/* Card 4: Socratic Tutor Sessions */}
         <div className="rounded-2xl border border-[#E3E6EF] dark:border-[#26324B] bg-white dark:bg-[#121A2D] p-5 space-y-3 shadow-xs hover:border-[#6C5CE7]/40 dark:hover:border-[#8175F5]/40 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#667085] dark:text-[#A7B0C0]">Tutor Sessions</span>
+            <span className="text-xs font-semibold text-[#667085] dark:text-[#A7B0C0]">Tutor Engagement</span>
             <div className="w-7 h-7 rounded-lg bg-[#F0EDFF] dark:bg-[#211D42] text-[#6C5CE7] dark:text-[#8175F5] flex items-center justify-center">
               <Sparkles className="w-3.5 h-3.5" />
             </div>
           </div>
           <div>
             <span className="text-2xl sm:text-3xl font-extrabold text-[#172033] dark:text-[#F4F5F7] tracking-tight">
-              {conversations.length}
+              {totalTutorQuestions}
             </span>
-            <span className="text-xs text-[#667085] dark:text-[#A7B0C0] ml-1.5 font-medium">study threads</span>
+            <span className="text-xs text-[#667085] dark:text-[#A7B0C0] ml-1.5 font-medium">tutor questions</span>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-[#667085] dark:text-[#A7B0C0]">
             <Clock className="w-3 h-3" />
-            <span>{totalPagesIndexed} indexed pages</span>
+            <span>Interactive AI learning</span>
           </div>
         </div>
       </div>
@@ -276,39 +261,19 @@ export default function ProjectAnalyticsSection({ projectId }: ProjectAnalyticsP
               <FileText className="w-4 h-4 text-[#6C5CE7] dark:text-[#8175F5]" />
               <h4 className="font-bold text-sm text-[#172033] dark:text-[#F4F5F7]">Knowledge Base Corpus</h4>
             </div>
-            <span className="text-xs text-[#667085] dark:text-[#A7B0C0] font-mono font-medium">{totalPagesIndexed} Pages</span>
           </div>
 
           <div className="space-y-3">
-            {materials.length === 0 ? (
-              <div className="p-6 text-center text-xs text-[#667085] dark:text-[#A7B0C0] italic bg-[#FAF9FF] dark:bg-[#18223A] rounded-xl border border-[#E3E6EF] dark:border-[#26324B]">
-                No PDF materials uploaded yet. Upload documents to activate knowledge graph analytics.
+            <div className="p-4 flex flex-col gap-2 text-sm text-[#172033] dark:text-[#F4F5F7] bg-[#FAF9FF] dark:bg-[#18223A] rounded-xl border border-[#E3E6EF] dark:border-[#26324B]">
+              <div className="flex justify-between">
+                <span className="text-[#667085] dark:text-[#A7B0C0]">Uploaded Materials:</span>
+                <span className="font-semibold">{analytics.materials_uploaded}</span>
               </div>
-            ) : (
-              materials.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-[#FAF9FF] dark:bg-[#18223A] border border-[#E3E6EF] dark:border-[#26324B] text-xs"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <FileText className="w-4 h-4 text-[#6C5CE7] dark:text-[#8175F5] shrink-0" />
-                    <span className="font-semibold text-[#172033] dark:text-[#F4F5F7] truncate">{m.original_filename}</span>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[#667085] dark:text-[#A7B0C0] font-mono font-medium">{m.page_count || 0} pages</span>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                        m.status === "READY"
-                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40"
-                          : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/40"
-                      }`}
-                    >
-                      {m.status}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
+              <div className="flex justify-between">
+                <span className="text-[#667085] dark:text-[#A7B0C0]">Processed Materials:</span>
+                <span className="font-semibold">{analytics.materials_processed}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -379,12 +379,19 @@ class MasteryService:
                 matched_any = True
             else:
                 # If no direct keyword match, map to closest concept by shared words
-                best_concept = max(
-                    concepts,
-                    key=lambda c: sum(1 for word in c.name.lower().split() if word in q_text_lower),
-                )
-                concept_scores[best_concept.id].append(score_pct)
-                matched_any = True
+                best_concept = None
+                max_overlap = 0
+                for c in concepts:
+                    overlap = sum(1 for word in c.name.lower().split() if word in q_text_lower)
+                    if overlap > max_overlap:
+                        max_overlap = overlap
+                        best_concept = c
+                        
+                if best_concept and max_overlap > 0:
+                    concept_scores[best_concept.id].append(score_pct)
+                    matched_any = True
+                else:
+                    logger.info("Question '%s' could not be mapped to any concept. Dropping mastery update for this question.", q.id)
 
         # 3. Update mastery for each concept represented
         updated_masteries: List[ConceptMastery] = []

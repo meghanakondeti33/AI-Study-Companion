@@ -98,7 +98,7 @@ class GrowthService:
         else:
             previous_overall = None
             # On first assessment snapshot, trend delta is relative to baseline 0.0
-            trend_delta = round(overall_mastery, 1) if has_assessments else 0.0
+            trend_delta = 0.0
 
         # 3. Classify status deterministically
         status_label = self.classify_growth_status(

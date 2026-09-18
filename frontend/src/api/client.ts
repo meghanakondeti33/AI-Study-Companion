@@ -228,6 +228,35 @@ export interface LearnerContextItem {
   updated_at: string;
 }
 
+export interface ProjectAnalyticsResponse {
+  project_id: string;
+  total_learning_events: number;
+  materials_uploaded: number;
+  materials_processed: number;
+  tutor_questions: number;
+  quizzes_created: number;
+  quizzes_attempted: number;
+  quizzes_completed: number;
+  quiz_average_score: number;
+  concepts_tracked: number;
+  overall_mastery: number;
+  improving_concepts: number;
+  stable_concepts: number;
+  attention_concepts: number;
+  active_recommendations: number;
+  completed_recommendations: number;
+}
+
+export interface GlobalAnalyticsResponse {
+  total_projects: number;
+  total_learning_events: number;
+  total_materials: number;
+  total_tutor_questions: number;
+  total_quizzes: number;
+  quiz_average_score: number;
+  concepts_tracked: number;
+}
+
 // Phase 10: Admin Dashboard & System Health
 export interface AdminStats {
   total_users: number;
@@ -576,6 +605,12 @@ export const api = {
       const res = await request<{ items: LearnerContextItem[] }>("/api/v1/learner-context");
       return res.items;
     },
+  },
+  analytics: {
+    getProjectAnalytics: (projectId: string) =>
+      request<ProjectAnalyticsResponse>(`/api/v1/analytics/projects/${projectId}`),
+    getGlobalAnalytics: () =>
+      request<GlobalAnalyticsResponse>("/api/v1/analytics/global"),
   },
   admin: {
     getStats: () => request<AdminStats>("/api/v1/admin/stats"),

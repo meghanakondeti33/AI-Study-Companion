@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { api, SpaceItem, ProjectItem, LearnerContextItem } from "../api/client";
 import { AppShell } from "../components/AppShell";
+import GlobalAnalyticsSection from "../components/GlobalAnalyticsSection";
 import {
   Folder,
   BookOpen,
@@ -165,6 +166,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        <GlobalAnalyticsSection />
 
         {/* Learner Context Section (Strengths & Areas to Review) */}
         {(strengths.length > 0 || weaknesses.length > 0) && (

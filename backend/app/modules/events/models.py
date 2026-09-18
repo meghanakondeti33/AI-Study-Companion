@@ -53,10 +53,31 @@ def emit_learning_event(
         
         # Trigger learner context refresh asynchronously
         try:
-            from app.modules.learner_context.tasks import async_refresh_learner_context
-            async_refresh_learner_context.delay(user_id)
+            from app.config import settings
+            if settings.USE_CELERY:
+                from app.modules.learner_context.tasks import async_refresh_learner_context
+                async_refresh_learner_context.delay(user_id)
+            else:
+                import threading
+                from app.database import SessionLocal
+                from app.modules.learner_context.services import get_learner_context_service
+
+                def _local_refresh(uid: str):
+                    local_db = SessionLocal()
+                    try:
+                        service = get_learner_context_service()
+                        service.refresh_learner_context(local_db, uid)
+                        local_db.commit()
+                    except Exception as exc:
+                        local_db.rollback()
+                        logger.error("Error refreshing learner context locally: %s", exc)
+                    finally:
+                        local_db.close()
+                
+                threading.Thread(target=_local_refresh, args=(user_id,), daemon=True).start()
+                
         except Exception as e:
-            logger.warning("Failed to trigger learner context refresh task: %s", e)
+            logger.warning("Failed to trigger learner context refresh: %s", e)
             
     except IntegrityError as e:
         logger.info("Idempotent learning event skipped for key: %s (user=%s, type=%s)", idempotency_key, user_id, event_type)

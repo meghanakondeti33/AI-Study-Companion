@@ -161,6 +161,7 @@ class QuizService:
         generated_data: Optional[QuizGenerationAIResponse] = None
         attempt_count = 0
         max_retries = 2
+        last_error = None
 
         while attempt_count < max_retries:
             attempt_count += 1
@@ -184,12 +185,47 @@ class QuizService:
                     retrieval_chunks_count=len(retrieved_chunks),
                 )
 
-                parsed_json = json.loads(content)
+                # Robust JSON extraction
+                clean_content = content.strip()
+                if clean_content.startswith("```json"):
+                    clean_content = clean_content[7:]
+                elif clean_content.startswith("```"):
+                    clean_content = clean_content[3:]
+                if clean_content.endswith("```"):
+                    clean_content = clean_content[:-3]
+                clean_content = clean_content.strip()
+
+                parsed_json = json.loads(clean_content)
+                if isinstance(parsed_json, list):
+                    parsed_json = {"questions": parsed_json}
+                elif isinstance(parsed_json, dict) and "questions" not in parsed_json and "quiz" in parsed_json:
+                    parsed_json = {"questions": parsed_json["quiz"]}
+
                 generated_data = QuizGenerationAIResponse.model_validate(parsed_json)
                 if generated_data.questions:
                     break
-            except (LLMServiceError, Exception) as e:
-                logger.warning("Quiz generation attempt %d failed: %s", attempt_count, e)
+            except LLMServiceError as lse:
+                logger.warning("Quiz generation attempt %d failed with LLM error: %s", attempt_count, lse)
+                last_error = lse
+                if attempt_count >= max_retries:
+                    record_ai_telemetry(
+                        db=db,
+                        user_id=user_id,
+                        feature="quiz_generation",
+                        model=self.llm.model,
+                        latency_ms=0,
+                        status="error",
+                        error_message=str(lse),
+                        project_id=project_id,
+                        retrieval_chunks_count=len(retrieved_chunks),
+                    )
+                    raise HTTPException(
+                        status_code=lse.status_code,
+                        detail=f"Failed to generate quiz from AI service: {lse.message}",
+                    )
+            except Exception as e:
+                logger.warning("Quiz generation attempt %d failed with exception: %s", attempt_count, e)
+                last_error = e
                 if attempt_count >= max_retries:
                     record_ai_telemetry(
                         db=db,
@@ -204,13 +240,13 @@ class QuizService:
                     )
                     raise HTTPException(
                         status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail="Failed to generate quiz from AI service. Please try again.",
+                        detail=f"Failed to generate quiz from AI service: {e}",
                     )
 
         if not generated_data or not generated_data.questions:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="AI service returned an empty or malformed quiz structure.",
+                detail="Failed to generate quiz from AI service: AI service returned an empty or malformed quiz structure.",
             )
 
         # 6. Create Quiz & QuizQuestion records with grounded citations
@@ -476,7 +512,16 @@ class QuizService:
                     retrieval_chunks_count=len(supporting_chunks),
                 )
 
-                parsed = json.loads(content)
+                clean_eval_content = content.strip()
+                if clean_eval_content.startswith("```json"):
+                    clean_eval_content = clean_eval_content[7:]
+                elif clean_eval_content.startswith("```"):
+                    clean_eval_content = clean_eval_content[3:]
+                if clean_eval_content.endswith("```"):
+                    clean_eval_content = clean_eval_content[:-3]
+                clean_eval_content = clean_eval_content.strip()
+
+                parsed = json.loads(clean_eval_content)
                 eval_data = OpenEndedEvaluation.model_validate(parsed)
                 break
             except Exception as e:

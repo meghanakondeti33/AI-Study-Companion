@@ -293,5 +293,5 @@ def test_health_endpoint_safety(client: TestClient):
     assert "postgres:" not in serialized
     assert "redis://" not in serialized
     assert settings.SECRET_KEY not in serialized
-    if settings.OPENAI_API_KEY:
-        assert settings.OPENAI_API_KEY not in serialized
+    if settings.GEMINI_API_KEY:
+        assert settings.GEMINI_API_KEY not in serialized

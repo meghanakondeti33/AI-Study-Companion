@@ -34,7 +34,19 @@ class LocalStorageService(StorageService):
     """Local filesystem implementation of StorageService."""
 
     def __init__(self, base_dir: str | None = None):
-        self.base_dir = Path(base_dir or settings.STORAGE_LOCAL_PATH).resolve()
+        raw = base_dir or settings.STORAGE_LOCAL_PATH
+        p = Path(raw)
+        if not p.is_absolute():
+            # Resolve relative to project root
+            project_root = Path(__file__).resolve().parent.parent.parent.parent
+            candidate = (project_root / raw).resolve()
+            if candidate.exists() or not p.exists():
+                p = candidate
+            else:
+                p = p.resolve()
+        else:
+            p = p.resolve()
+        self.base_dir = p
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def _sanitize_filename(self, filename: str) -> str:
@@ -62,6 +74,14 @@ class LocalStorageService(StorageService):
     def get_file(self, storage_key: str) -> bytes:
         target_path = self._resolve_path(storage_key)
         if not target_path.exists():
+            # Check secondary fallback location (e.g. backend/storage/uploads vs storage/uploads)
+            project_root = Path(__file__).resolve().parent.parent.parent.parent
+            for alt_dir in [project_root / "storage" / "uploads", project_root / "backend" / "storage" / "uploads"]:
+                alt_path = alt_dir / storage_key
+                if alt_path.exists():
+                    target_path = alt_path
+                    break
+        if not target_path.exists():
             raise FileNotFoundError(f"Stored file not found: {storage_key}")
         with open(target_path, "rb") as f:
             return f.read()
@@ -69,6 +89,11 @@ class LocalStorageService(StorageService):
     def get_file_path(self, storage_key: str) -> Path:
         target_path = self._resolve_path(storage_key)
         if not target_path.exists():
+            project_root = Path(__file__).resolve().parent.parent.parent.parent
+            for alt_dir in [project_root / "storage" / "uploads", project_root / "backend" / "storage" / "uploads"]:
+                alt_path = alt_dir / storage_key
+                if alt_path.exists():
+                    return alt_path
             raise FileNotFoundError(f"Stored file not found: {storage_key}")
         return target_path
 

@@ -296,8 +296,9 @@ test.describe("Phase 5 E2E Flow: Concept Mastery Tracking", () => {
       localStorage.setItem("ai_study_token", "test-token-phase5");
     });
 
-    // Navigate to ProjectPage
+    // Navigate to ProjectPage and switch to Mastery & Growth tab
     await page.goto("/projects/prj-202");
+    await page.click("#tab-mastery");
 
     // 1. Verify Mastery Section renders
     await expect(page.locator("#mastery-section")).toBeVisible();

@@ -337,8 +337,9 @@ test.describe("Phase 4 E2E Flow: Adaptive Quiz + Understanding Evaluation", () =
     await page.fill('input[type="password"]', "Password123!");
     await page.click('button[type="submit"]');
 
-    // Step 2: Open Project Page
+    // Step 2: Open Project Page and switch to Adaptive Quiz tab
     await page.goto("/projects/prj-202");
+    await page.click("#tab-quiz");
     await expect(page.locator("h2")).toContainText("Cell Biology 101");
 
     // Step 3: Verify Quiz Section & Generate Quiz

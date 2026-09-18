@@ -283,8 +283,9 @@ test.describe("Phase 3 E2E Flow: AI Tutor + Grounded RAG + Citations + Refusal",
     await page.getByPlaceholder("••••••••").fill("Password123!");
     await page.getByRole("button", { name: "Sign in" }).click();
 
-    // 2. Navigate directly to the project page
+    // 2. Navigate directly to the project page and switch to AI Tutor tab
     await page.goto("/projects/prj-202");
+    await page.click("#tab-tutor");
 
     // 3. Verify Project and AI Tutor section header
     await expect(page.getByRole("heading", { name: "Cell Biology 101" })).toBeVisible();

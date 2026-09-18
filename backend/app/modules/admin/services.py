@@ -345,7 +345,7 @@ def get_admin_system_health(db: Session) -> schemas.AdminSystemHealthResponse:
     except Exception:
         storage_status = "unavailable"
 
-    ai_status = "configured" if bool(settings.OPENAI_API_KEY and settings.OPENAI_API_KEY.strip()) else "mock_mode"
+    ai_status = "configured" if bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip() and settings.GEMINI_API_KEY not in ("your-gemini-api-key-here", "your-openai-api-key-here", "mock-key")) else "mock_mode"
 
     is_healthy = db_status == "connected" and redis_status == "connected" and storage_status == "ready"
 

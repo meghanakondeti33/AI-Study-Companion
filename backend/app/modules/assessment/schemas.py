@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from typing import List, Optional, Any
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class QuestionCitation(BaseModel):
@@ -88,14 +88,48 @@ class AttemptRead(BaseModel):
 # --- AI Structured Output Schemas ---
 
 class GeneratedQuestionItem(BaseModel):
-    question_type: str = Field(..., pattern="^(mcq|open_ended)$")
-    question_text: str = Field(..., min_length=5)
-    options: Optional[List[str]] = None  # Exactly 4 options for MCQ, null for open-ended
+    question_type: str = Field(...)
+    question_text: str = Field(..., min_length=3)
+    options: Optional[List[str]] = None
     correct_answer: str = Field(..., min_length=1)
-    explanation: str = Field(..., min_length=5)
-    difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
-    page_number: int = Field(..., ge=1)
+    explanation: str = Field(default="", min_length=0)
+    difficulty: str = Field(default="medium")
+    page_number: int = Field(default=1)
     material_id: Optional[str] = None
+
+    @field_validator("question_type", mode="before")
+    @classmethod
+    def normalize_question_type(cls, v: Any) -> str:
+        s = str(v).strip().lower().replace("-", "_").replace(" ", "_")
+        if "mcq" in s or "choice" in s:
+            return "mcq"
+        elif "open" in s:
+            return "open_ended"
+        raise ValueError(f"Invalid question_type: '{v}'. Must be 'mcq' or 'open_ended'.")
+
+
+    @field_validator("difficulty", mode="before")
+    @classmethod
+    def normalize_difficulty(cls, v: Any) -> str:
+        s = str(v).strip().lower()
+        if s in ("easy", "medium", "hard"):
+            return s
+        return "medium"
+
+    @field_validator("page_number", mode="before")
+    @classmethod
+    def normalize_page_number(cls, v: Any) -> int:
+        try:
+            val = int(v)
+            return val if val >= 1 else 1
+        except (ValueError, TypeError):
+            return 1
+
+    @field_validator("explanation", mode="before")
+    @classmethod
+    def normalize_explanation(cls, v: Any) -> str:
+        s = str(v).strip() if v else ""
+        return s if s else "Refer to supporting material."
 
 
 class QuizGenerationAIResponse(BaseModel):
@@ -103,9 +137,10 @@ class QuizGenerationAIResponse(BaseModel):
 
 
 class OpenEndedEvaluation(BaseModel):
-    score: float = Field(..., ge=0.0, le=1.0)
-    is_correct: bool
-    feedback: str = Field(..., min_length=3)
+    score: float = Field(default=0.5, ge=0.0, le=1.0)
+    is_correct: bool = Field(default=False)
+    feedback: str = Field(default="Evaluation completed.", min_length=1)
     strengths: List[str] = Field(default_factory=list)
     gaps: List[str] = Field(default_factory=list)
-    improvement_hint: str = Field(..., min_length=3)
+    improvement_hint: str = Field(default="Review the material.", min_length=1)
+

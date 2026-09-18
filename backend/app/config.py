@@ -49,7 +49,11 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 100
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://ai-study-companion-azure.vercel.app"
+    ]
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

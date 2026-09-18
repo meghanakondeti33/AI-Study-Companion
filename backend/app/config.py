@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/ai_study_companion"
 
     # Background Processing (Redis & Celery)
+    USE_CELERY: bool = True
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"

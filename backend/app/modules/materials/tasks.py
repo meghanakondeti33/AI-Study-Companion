@@ -225,3 +225,33 @@ def process_material_task(self, material_id: str, job_id: str | None = None):
             mark_job_failed(db, job_id, str(exc))
     finally:
         db.close()
+
+def run_material_processing_local(material_id: str, job_id: str | None = None):
+    """
+    Local process execution wrapper designed to be called by FastAPI BackgroundTasks.
+    Provides identical DB session and lifecycle management as the Celery task, 
+    but runs in the local web server process instead of requiring a separate worker.
+    """
+    db: Session = SessionLocal()
+    try:
+        if job_id:
+            mark_job_running(db, job_id, attempt=1)
+        
+        process_material_sync(db, material_id, job_id)
+        
+        if job_id:
+            mark_job_completed(db, job_id)
+            
+    except TransientProcessingError as exc:
+        logger.warning(
+            "Transient error in run_material_processing_local: %s. Local tasks do not auto-retry.",
+            exc,
+        )
+        if job_id:
+            mark_job_failed(db, job_id, str(exc))
+    except Exception as exc:
+        logger.error("Fatal error in run_material_processing_local: %s", exc)
+        if job_id:
+            mark_job_failed(db, job_id, str(exc))
+    finally:
+        db.close()

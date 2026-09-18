@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -12,7 +12,7 @@ from app.modules.users.models import User
 from app.modules.projects.models import Project
 from app.modules.materials.models import Material, MaterialStatus
 from app.modules.materials.schemas import MaterialRead, MaterialDetailRead
-from app.modules.materials.tasks import process_material_task
+from app.modules.materials.tasks import process_material_task, run_material_processing_local
 from app.modules.events.models import emit_learning_event
 from app.modules.jobs.services import create_job
 
@@ -28,6 +28,7 @@ router = APIRouter(tags=["Materials"])
 )
 async def upload_material(
     project_id: str,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -111,7 +112,7 @@ async def upload_material(
     )
     db.commit()
 
-    # 8. Create BackgroundJob and dispatch Celery task
+    # 8. Create BackgroundJob and dispatch Celery task or BackgroundTask
     job = create_job(
         db=db,
         job_type="material_processing",
@@ -121,13 +122,20 @@ async def upload_material(
         entity_type="material",
     )
     
-    try:
-        process_material_task.delay(material.id, job.id)
-    except Exception as e:
-        logger.warning(
-            "Could not dispatch Celery task for material %s (worker may be offline): %s",
+    if settings.USE_CELERY:
+        try:
+            process_material_task.delay(material.id, job.id)
+        except Exception as e:
+            logger.warning(
+                "Could not dispatch Celery task for material %s (worker may be offline): %s",
+                material.id,
+                e,
+            )
+    else:
+        background_tasks.add_task(
+            run_material_processing_local,
             material.id,
-            e,
+            job.id
         )
 
     return material

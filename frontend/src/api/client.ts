@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 const TOKEN_KEY = "ai_study_token";
 
 export interface UserProfile {
@@ -389,7 +391,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(endpoint, {
+  // Use VITE_API_BASE_URL if available, otherwise default to empty string for relative proxy paths
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
+  const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+  const fullEndpoint = `${normalizedBaseUrl}${endpoint}`;
+
+  const response = await fetch(fullEndpoint, {
     ...options,
     headers,
   });
